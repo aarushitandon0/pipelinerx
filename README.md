@@ -7,7 +7,7 @@ sdk: docker
 pinned: false
 license: mit
 app_port: 7860
-short_description: RL environment for diagnosing and repairing ML pipeline failures
+short_description: RL environment for ML pipeline debugging and repair
 tags:
   - reinforcement-learning
   - openenv
