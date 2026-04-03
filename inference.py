@@ -92,6 +92,7 @@ def trim_history(history: list) -> list:
 def run_episode(task_id: int) -> float:
     """Run one episode for a given task. Returns final reward."""
     final_reward = 0.0
+    done = False
     step = 0
 
     try:
