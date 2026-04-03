@@ -1,0 +1,61 @@
+name: PipelineRx
+description: >
+  An RL environment where AI agents diagnose and repair silent, real-world ML
+  pipeline failures — earning rewards by fixing broken pandas DataFrames across
+  five escalating incident scenarios.
+version: "1.0.0"
+author: PipelineRx Team
+license: MIT
+
+env:
+  type: http
+  url: http://localhost:7860
+  endpoints:
+    reset: /reset
+    step: /step
+    state: /state
+    tasks: /tasks
+    health: /health
+
+tasks:
+  count: 5
+  list:
+    - id: 1
+      name: Type Corruption
+      difficulty: easy
+    - id: 2
+      name: Feature Encoding Bug
+      difficulty: easy-medium
+    - id: 3
+      name: Schema Drift
+      difficulty: medium
+    - id: 4
+      name: Target Leakage
+      difficulty: hard
+    - id: 5
+      name: Cascading Pipeline Failure
+      difficulty: hard
+
+action_space:
+  type: structured_json
+  actions:
+    - inspect_data
+    - inspect_schema
+    - apply_fix
+    - run_tests
+    - check_column_stats
+    - inspect_stage
+
+observation_space:
+  type: text
+  format: plain English descriptions of DataFrame state
+
+reward:
+  range: [0.0, 1.0]
+  partial_credit: true
+  sub_tests_per_task: 5
+
+deploy:
+  platform: huggingface-spaces
+  sdk: docker
+  port: 7860
