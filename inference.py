@@ -104,6 +104,8 @@ def run_episode(task_id: int) -> float:
         ).json()
 
         observation = reset_resp.get("observation", "Episode started.")
+        # Read max_steps from the reset info so Task 5 gets 40 steps
+        max_steps = reset_resp.get("info", {}).get("max_steps", 30)
         print(
             f'[START] task_id={task_id} observation="{observation[:80]}"',
             flush=True,
@@ -111,7 +113,7 @@ def run_episode(task_id: int) -> float:
 
         history = [{"role": "user", "content": observation}]
 
-        for step in range(30):
+        for step in range(max_steps):
             # Trim history to prevent context overflow
             history = trim_history(history)
 

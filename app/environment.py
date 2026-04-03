@@ -516,6 +516,7 @@ class EnvironmentState:
             "tests_total": 5,
             "step_count": self.step_count,
             "task_id": self.task_id,
+            "max_steps": self.max_steps,
             "warnings": [],
         }
 

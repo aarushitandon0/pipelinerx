@@ -9,7 +9,7 @@ license: MIT
 
 env:
   type: http
-  url: http://localhost:7860
+  url: https://areyousheeeee-pipeline-rx.hf.space
   endpoints:
     reset: /reset
     step: /step

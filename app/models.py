@@ -26,6 +26,7 @@ class InfoDict(BaseModel):
     tests_total: int = 5
     step_count: int = 0
     task_id: int = 1
+    max_steps: int = 30
     warnings: List[str] = Field(default_factory=list)
     root_cause_stage: Optional[int] = None
     # Optional session token returned by /reset. Agents may include this
