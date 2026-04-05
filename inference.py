@@ -25,6 +25,9 @@ from openai import OpenAI
 API_BASE_URL = os.environ.get("API_BASE_URL", "")
 MODEL_NAME = os.environ.get("MODEL_NAME", "")
 HF_TOKEN = os.environ.get("HF_TOKEN", "")
+# OPENAI_API_KEY is the standard OpenAI env var; HF_TOKEN takes precedence
+# so the script works with both naming conventions
+API_KEY = HF_TOKEN or os.environ.get("OPENAI_API_KEY", "")
 ENV_URL = os.environ.get("ENV_URL", "http://localhost:7860")
 
 # Benchmark / environment name used in structured logs
@@ -39,7 +42,7 @@ BASELINE_TASKS = list(range(1, 4))
 # Keeps worst-case runtime to ~12 min for 3 tasks on slow hardware.
 MAX_STEPS_OVERRIDE = 20
 
-client = OpenAI(api_key=HF_TOKEN, base_url=API_BASE_URL)
+client = OpenAI(api_key=API_KEY, base_url=API_BASE_URL)
 
 # ── System prompt ───────────────────────────────────────────────────────────
 
@@ -90,33 +93,31 @@ CRITICAL: Respond with ONLY a JSON object. No text before or after."""
 
 # ── Structured log helpers (required format) ────────────────────────────────
 
-def log_start(task_id: int, task_name: str, observation: str) -> None:
-    """Emit the required [START] line."""
+def log_start(task: str, env: str, model: str) -> None:
+    """Emit the required [START] line.
+    Signature matches the sample: log_start(task=TASK_NAME, env=BENCHMARK, model=MODEL_NAME)
+    """
+    print(f"[START] task={task} env={env} model={model}", flush=True)
+
+
+def log_step(step: int, action: str, reward: float, done: bool, error: object = None) -> None:
+    """Emit the required [STEP] line.
+    Signature matches the sample: log_step(step=step, action=message, reward=reward, done=done, error=error)
+    """
     print(
-        f'[START] task={task_name} env={BENCHMARK} model={MODEL_NAME} '
-        f'task_id={task_id} observation="{observation[:120]}"',
+        f"[STEP] step={step} action={action} reward={reward:.4f} "
+        f"done={str(done).lower()} error={error}",
         flush=True,
     )
 
 
-def log_step(task_id: int, step: int, action: str, reward: float, done: bool, error: str | None = None) -> None:
-    """Emit the required [STEP] line."""
-    error_part = f" error={error}" if error else ""
+def log_end(success: bool, steps: int, score: float, rewards: list) -> None:
+    """Emit the required [END] line.
+    Signature matches the sample: log_end(success=success, steps=steps_taken, score=score, rewards=rewards)
+    """
     print(
-        f"[STEP] task_id={task_id} step={step} action={action} "
-        f"reward={reward:.4f} done={str(done).lower()}{error_part}",
-        flush=True,
-    )
-
-
-def log_end(task_id: int, success: bool, steps: int, score: float, rewards: list[float]) -> None:
-    """Emit the required [END] line."""
-    status = "success" if success else "partial" if score >= 0.5 else "fail"
-    print(
-        f"[END] task_id={task_id} success={str(success).lower()} "
-        f"steps={steps} score={score:.4f} "
-        f"final_reward={score:.4f} status={status} "
-        f"rewards={[round(r, 4) for r in rewards]}",
+        f"[END] success={str(success).lower()} steps={steps} "
+        f"score={score:.4f} rewards={[round(r, 4) for r in rewards]}",
         flush=True,
     )
 
@@ -140,8 +141,10 @@ def run_episode(task_id: int) -> float:
     final_reward = 0.0
     done = False
     step = 0
-    rewards: list[float] = []
-    task_name = f"Task{task_id}"
+    rewards: list = []
+    steps_taken = 0
+    score = 0.0
+    success = False
 
     try:
         # Reset the environment
@@ -152,17 +155,18 @@ def run_episode(task_id: int) -> float:
         ).json()
 
         observation = reset_resp.get("observation", "Episode started.")
-        task_name = reset_resp.get("info", {}).get("task_id", task_id)
         # Use server max_steps but cap at MAX_STEPS_OVERRIDE for runtime safety
         server_max_steps = reset_resp.get("info", {}).get("max_steps", 30)
         max_steps = min(server_max_steps, MAX_STEPS_OVERRIDE)
 
-        # Extract human-readable task name for the log
+        # Human-readable task name for the log (first line of observation)
         task_label = observation.split("\n")[0] if "\n" in observation else f"Task {task_id}"
 
-        log_start(task_id=task_id, task_name=task_label, observation=observation)
+        # ── [START] ── exact sample signature: log_start(task, env, model)
+        log_start(task=task_label, env=BENCHMARK, model=MODEL_NAME)
 
         history = [{"role": "user", "content": observation}]
+        last_reward = 0.0
 
         for step in range(1, max_steps + 1):
             if done:
@@ -172,7 +176,7 @@ def run_episode(task_id: int) -> float:
             history = trim_history(history)
 
             # Call LLM
-            error_msg = None
+            error_val = None
             try:
                 response = client.chat.completions.create(
                     model=MODEL_NAME,
@@ -182,16 +186,17 @@ def run_episode(task_id: int) -> float:
                 )
                 agent_action_str = response.choices[0].message.content.strip()
             except Exception as e:
-                error_msg = str(e)
-                log_step(task_id=task_id, step=step, action="error",
-                         reward=final_reward, done=False, error=error_msg)
-                rewards.append(final_reward)
+                error_val = str(e)
+                # ── [STEP] ── exact sample signature: log_step(step, action, reward, done, error)
+                log_step(step=step, action="error", reward=last_reward,
+                         done=False, error=error_val)
+                rewards.append(last_reward)
+                steps_taken = step
                 time.sleep(1)
                 continue
 
             # Parse the LLM output as JSON
             try:
-                # Handle markdown code blocks
                 cleaned = agent_action_str
                 if cleaned.startswith("```"):
                     lines = cleaned.split("\n")
@@ -199,7 +204,6 @@ def run_episode(task_id: int) -> float:
                     cleaned = "\n".join(lines)
                 agent_action = json.loads(cleaned)
             except json.JSONDecodeError:
-                # Fallback: try to extract JSON from the response
                 try:
                     start_idx = agent_action_str.index("{")
                     end_idx = agent_action_str.rindex("}") + 1
@@ -207,13 +211,13 @@ def run_episode(task_id: int) -> float:
                 except (ValueError, json.JSONDecodeError):
                     agent_action = {"action": "inspect_schema", "parameters": {}}
 
-            # Ensure required keys
             if "action" not in agent_action:
                 agent_action = {"action": "inspect_schema", "parameters": {}}
             if "parameters" not in agent_action:
                 agent_action["parameters"] = {}
 
             # Execute the action
+            error_val = None
             try:
                 step_resp = requests.post(
                     f"{ENV_URL}/step",
@@ -221,11 +225,11 @@ def run_episode(task_id: int) -> float:
                     timeout=30,
                 ).json()
             except Exception as e:
-                error_msg = str(e)
-                log_step(task_id=task_id, step=step,
-                         action=agent_action.get("action", "unknown"),
-                         reward=final_reward, done=False, error=error_msg)
-                rewards.append(final_reward)
+                error_val = str(e)
+                log_step(step=step, action=agent_action.get("action", "unknown"),
+                         reward=last_reward, done=False, error=error_val)
+                rewards.append(last_reward)
+                steps_taken = step
                 time.sleep(1)
                 continue
 
@@ -234,15 +238,18 @@ def run_episode(task_id: int) -> float:
             obs = step_resp.get("observation", "")
             action_name = agent_action.get("action", "unknown")
 
-            log_step(task_id=task_id, step=step, action=action_name,
-                     reward=reward, done=done)
+            # ── [STEP] ── exact sample signature: log_step(step, action, reward, done, error)
+            log_step(step=step, action=action_name, reward=reward,
+                     done=done, error=None)
 
             # Update history
             history.append({"role": "assistant", "content": json.dumps(agent_action)})
             history.append({"role": "user", "content": obs})
 
+            last_reward = reward
             final_reward = reward
             rewards.append(reward)
+            steps_taken = step
 
             if done:
                 break
@@ -258,17 +265,22 @@ def run_episode(task_id: int) -> float:
                 final_reward = final_resp.get("reward", final_reward)
                 rewards.append(final_reward)
             except Exception:
-                pass  # keep last known reward
+                pass
+
+        # Compute score exactly like the sample:
+        # score = sum(rewards) / MAX_TOTAL_REWARD, clamped to [0, 1]
+        # MAX_TOTAL_REWARD = max_steps (each step can contribute at most 1.0)
+        # Simpler: use the final grader reward directly since it IS already [0,1]
+        score = min(max(final_reward, 0.0), 1.0)
+        success = score >= 0.95
 
     except Exception as e:
         traceback.print_exc(file=sys.stderr)
 
-    # Always print [END] line — even on failure
-    success = final_reward >= 0.95
-    log_end(task_id=task_id, success=success, steps=step,
-            score=final_reward, rewards=rewards)
+    # ── [END] ── exact sample signature: log_end(success, steps, score, rewards)
+    log_end(success=success, steps=steps_taken, score=score, rewards=rewards)
 
-    return final_reward
+    return score
 
 
 # ── Main ────────────────────────────────────────────────────────────────────

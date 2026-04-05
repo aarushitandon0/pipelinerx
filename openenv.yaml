@@ -6,6 +6,8 @@ description: >
 version: "1.0.0"
 author: PipelineRx Team
 license: MIT
+tags:
+  - openenv
 
 env:
   type: http

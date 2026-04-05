@@ -74,11 +74,19 @@ with open(os.path.join(root, 'inference.py')) as f:
     check('inference has [START] format', '[START]' in content)
     check('inference has [STEP] format', '[STEP]' in content)
     check('inference has [END] format', '[END]' in content)
-    check('inference [START] has task= field', 'task=' in content)
-    check('inference [START] has env= field', 'env=' in content)
-    check('inference [START] has model= field', 'model=' in content)
-    check('inference [END] has score= field', 'score=' in content)
-    check('inference [END] has success= field', 'success=' in content)
+    # Exact sample signatures
+    check('inference log_start has task= param', 'log_start(task=' in content)
+    check('inference log_start has env= param', 'env=BENCHMARK' in content)
+    check('inference log_start has model= param', 'model=MODEL_NAME' in content)
+    check('inference log_step has step= param', 'log_step(step=' in content)
+    check('inference log_step has action= param', 'action=' in content)
+    check('inference log_step has reward= param', 'reward=' in content)
+    check('inference log_step has done= param', 'done=' in content)
+    check('inference log_step has error= param', 'error=' in content)
+    check('inference log_end has success= param', 'log_end(success=' in content)
+    check('inference log_end has steps= param', 'steps=' in content)
+    check('inference log_end has score= param', 'score=' in content)
+    check('inference log_end has rewards= param', 'rewards=' in content)
     check('inference has BASELINE_TASKS', 'BASELINE_TASKS' in content)
     check('inference has MAX_STEPS_OVERRIDE runtime guard', 'MAX_STEPS_OVERRIDE' in content)
 
@@ -89,6 +97,7 @@ try:
         content = f.read()
     for field in ['name', 'description', 'version', 'env', 'tasks', 'action_space', 'observation_space', 'reward']:
         check(f'openenv.yaml has "{field}"', field in content)
+    check('openenv.yaml has "tags" with openenv', 'openenv' in content)
 except Exception as e:
     check(f'openenv.yaml readable ({e})', False)
 
