@@ -519,21 +519,19 @@ The container exposes port 7860. The server starts automatically on container la
 
 **Episode start:**
 ```
-[START] task=Task 1: Type Corruption (easy) env=PipelineRx-v1 model=<MODEL_NAME> task_id=1 observation="Task 1: Type Corruption..."
+[START] task=Task 1: Type Corruption (easy) env=PipelineRx-v1 model=<MODEL_NAME>
 ```
 
 **Each step:**
 ```
-[STEP] task_id=1 step=1 action=inspect_schema reward=0.0000 done=false
-[STEP] task_id=1 step=2 action=apply_fix reward=0.2000 done=false
+[STEP] step=1 action=inspect_schema reward=0.00 done=false error=null
+[STEP] step=2 action=apply_fix reward=0.20 done=false error=null
 ```
 
 **Episode end:**
 ```
-[END] task_id=1 success=true steps=8 score=1.0000 final_reward=1.0000 status=success rewards=[0.0, 0.2, 0.4, 0.6, 0.8, 1.0]
+[END] success=true steps=8 score=1.000 rewards=0.00,0.00,0.20,0.40,0.60,0.80,1.00,1.00
 ```
-
-`status` is one of `success` (score >= 0.95), `partial` (score >= 0.5), or `fail` (score < 0.5).
 
 The baseline runs tasks 1–3 by default (`BASELINE_TASKS = [1, 2, 3]`) with a hard cap of 20 steps per episode (`MAX_STEPS_OVERRIDE = 20`) to stay within the 20-minute runtime limit on 2-vCPU / 8 GB machines.
 
@@ -559,8 +557,9 @@ pipelinerx/
 ├── openenv.yaml           OpenEnv environment metadata
 ├── Dockerfile             Container definition for Hugging Face Spaces
 ├── requirements.txt       Python dependencies
-├── validate_checklist.py  Pre-submission validation script (58 checks)
-├── test_smoke.py          Integration test suite (42 tests)
+├── validate_checklist.py  Pre-submission validation script (73 checks)
+├── test_smoke.py          Integration test suite
+├── test_endpoints.py      Endpoint smoke tests
 └── README.md
 ```
 
@@ -581,9 +580,10 @@ pipelinerx/
 
 PipelineRx is deployed to Hugging Face Spaces as a Docker container.
 
-Live URL: `https://areyousheeeee-pipeline-rx.hf.space`
-
-Health check: `https://areyousheeeee-pipeline-rx.hf.space/health`
+- **HF Space:** <https://huggingface.co/spaces/areyousheeeee/pipeline_rx>
+- **Live API:** <https://areyousheeeee-pipeline-rx.hf.space>
+- **Health check:** <https://areyousheeeee-pipeline-rx.hf.space/health>
+- **GitHub:** <https://github.com/aarushitandon0/pipelinerx>
 
 To deploy your own instance:
 
@@ -606,6 +606,7 @@ To deploy your own instance:
 | pydantic | 2.7.1 | Typed request and response models |
 | openai | 1.30.0 | LLM client for inference.py |
 | requests | 2.32.0 | HTTP client for inference.py |
+| python-dotenv | >=1.0.0 | Load .env files for local development |
 
 ---
 
