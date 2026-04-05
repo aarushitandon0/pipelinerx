@@ -38,6 +38,17 @@ def _startup():
 
 # ── Endpoints ───────────────────────────────────────────────────────────────
 
+@app.get("/")
+def root():
+    """Root endpoint — simple welcome message so the Space never 404s."""
+    return {
+        "name": "PipelineRx",
+        "description": "RL environment for ML pipeline debugging",
+        "endpoints": ["/health", "/reset", "/step", "/state", "/tasks"],
+        "docs": "/docs",
+    }
+
+
 @app.get("/health", response_model=HealthResponse)
 def health():
     """Health check. Returns {"status": "ok"} with HTTP 200."""
