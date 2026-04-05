@@ -18,7 +18,13 @@ import time
 import traceback
 
 import requests
+from dotenv import load_dotenv
 from openai import OpenAI
+
+# Load .env file if present (no-op when running in HF Spaces or other envs
+# where variables are already injected — override=False ensures real env vars
+# always win over the .env file values).
+load_dotenv(override=False)
 
 # ── Configuration ───────────────────────────────────────────────────────────
 
@@ -104,9 +110,11 @@ def log_step(step: int, action: str, reward: float, done: bool, error: object = 
     """Emit the required [STEP] line.
     Signature matches the sample: log_step(step=step, action=message, reward=reward, done=done, error=error)
     """
+    error_val = error if error else "null"
+    done_val = str(done).lower()
     print(
-        f"[STEP] step={step} action={action} reward={reward:.4f} "
-        f"done={str(done).lower()} error={error}",
+        f"[STEP] step={step} action={action} reward={reward:.2f} "
+        f"done={done_val} error={error_val}",
         flush=True,
     )
 
@@ -115,9 +123,10 @@ def log_end(success: bool, steps: int, score: float, rewards: list) -> None:
     """Emit the required [END] line.
     Signature matches the sample: log_end(success=success, steps=steps_taken, score=score, rewards=rewards)
     """
+    rewards_str = ",".join(f"{r:.2f}" for r in rewards)
     print(
         f"[END] success={str(success).lower()} steps={steps} "
-        f"score={score:.4f} rewards={[round(r, 4) for r in rewards]}",
+        f"score={score:.3f} rewards={rewards_str}",
         flush=True,
     )
 
