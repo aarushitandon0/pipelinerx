@@ -28,9 +28,9 @@ load_dotenv(override=False)
 
 # ── Configuration ───────────────────────────────────────────────────────────
 
-API_BASE_URL = os.environ.get("API_BASE_URL", "")
-MODEL_NAME = os.environ.get("MODEL_NAME", "")
-HF_TOKEN = os.environ.get("HF_TOKEN", "")
+API_BASE_URL = os.environ.get("API_BASE_URL", "https://api-inference.huggingface.co/v1")
+MODEL_NAME = os.environ.get("MODEL_NAME", "mistralai/Mistral-7B-Instruct-v0.3")
+HF_TOKEN = os.environ.get("HF_TOKEN")
 # OPENAI_API_KEY is the standard OpenAI env var; HF_TOKEN takes precedence
 # so the script works with both naming conventions
 API_KEY = HF_TOKEN or os.environ.get("OPENAI_API_KEY", "")
