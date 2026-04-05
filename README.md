@@ -519,7 +519,7 @@ The container exposes port 7860. The server starts automatically on container la
 
 **Episode start:**
 ```
-[START] task_id=1 observation="Task 1: Type Corruption (easy)..."
+[START] task=Task 1: Type Corruption (easy) env=PipelineRx-v1 model=<MODEL_NAME> task_id=1 observation="Task 1: Type Corruption..."
 ```
 
 **Each step:**
@@ -530,10 +530,12 @@ The container exposes port 7860. The server starts automatically on container la
 
 **Episode end:**
 ```
-[END] task_id=1 final_reward=1.0000 steps=8 status=success
+[END] task_id=1 success=true steps=8 score=1.0000 final_reward=1.0000 status=success rewards=[0.0, 0.2, 0.4, 0.6, 0.8, 1.0]
 ```
 
-`status` is one of `success` (reward >= 0.95), `partial` (reward >= 0.5), or `fail` (reward < 0.5).
+`status` is one of `success` (score >= 0.95), `partial` (score >= 0.5), or `fail` (score < 0.5).
+
+The baseline runs tasks 1–3 by default (`BASELINE_TASKS = [1, 2, 3]`) with a hard cap of 20 steps per episode (`MAX_STEPS_OVERRIDE = 20`) to stay within the 20-minute runtime limit on 2-vCPU / 8 GB machines.
 
 ---
 

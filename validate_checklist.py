@@ -74,6 +74,13 @@ with open(os.path.join(root, 'inference.py')) as f:
     check('inference has [START] format', '[START]' in content)
     check('inference has [STEP] format', '[STEP]' in content)
     check('inference has [END] format', '[END]' in content)
+    check('inference [START] has task= field', 'task=' in content)
+    check('inference [START] has env= field', 'env=' in content)
+    check('inference [START] has model= field', 'model=' in content)
+    check('inference [END] has score= field', 'score=' in content)
+    check('inference [END] has success= field', 'success=' in content)
+    check('inference has BASELINE_TASKS', 'BASELINE_TASKS' in content)
+    check('inference has MAX_STEPS_OVERRIDE runtime guard', 'MAX_STEPS_OVERRIDE' in content)
 
 # 10. Verify openenv.yaml has required fields
 import yaml  # may not be installed; try plain parsing
