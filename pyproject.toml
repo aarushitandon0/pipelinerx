@@ -1,0 +1,38 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.backends._legacy:_Backend"
+
+[project]
+name = "pipelinerx"
+version = "1.0.0"
+description = "An RL environment where AI agents diagnose and repair silent, real-world ML pipeline failures."
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.10"
+authors = [
+    {name = "PipelineRx Team"},
+]
+keywords = ["openenv", "reinforcement-learning", "data-engineering", "ml-pipeline"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+]
+dependencies = [
+    "fastapi==0.111.0",
+    "uvicorn==0.30.0",
+    "pandas==2.2.2",
+    "numpy==1.26.4",
+    "scikit-learn==1.5.0",
+    "pydantic==2.7.1",
+    "openai==1.30.0",
+    "requests==2.32.0",
+    "python-dotenv>=1.0.0",
+]
+
+[project.urls]
+Homepage = "https://huggingface.co/spaces/areyousheeeee/pipeline_rx"
+Repository = "https://github.com/aarushitandon0/pipelinerx"
+
+[tool.setuptools.packages.find]
+include = ["app*"]
